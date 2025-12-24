@@ -15,3 +15,7 @@ desktop.ini
 # Logs
 npm-debug.log
 *.log
+
+# === FILE RAHASIA (PENTING!) ===
+secrets.js
+.env
