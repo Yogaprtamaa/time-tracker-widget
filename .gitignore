@@ -1,0 +1,17 @@
+# Dependency (WAJIB)
+node_modules/
+
+# Build outputs (Kalau nanti dibuild jadi .exe)
+dist/
+out/
+release/
+build/
+
+# System files (Sampah Windows/Mac)
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+npm-debug.log
+*.log

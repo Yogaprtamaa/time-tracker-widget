@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Widget</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="secrets.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { widgetBg: '#1e293b', mainBg: '#0f172a' } } }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .tab-content { display: none; animation: fadeIn 0.2s ease-in-out; }
+        .tab-content.active { display: flex; flex-direction: column; height: 100%; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+        .drag-region { -webkit-app-region: drag; user-select: none; }
+        button, textarea, input, .no-drag { -webkit-app-region: no-drag; }
+        body { font-size: 12px; } /* Default font kecil */
+    </style>
+</head>
+<body class="bg-transparent text-slate-200 font-sans flex justify-center items-start h-screen overflow-hidden">
+
+    <div class="w-full h-full bg-slate-900/95 border border-slate-700 overflow-hidden flex flex-col shadow-2xl rounded-xl backdrop-blur-md">
+        
+        <div class="bg-slate-800/80 p-2 border-b border-slate-700 drag-region flex justify-between items-center h-8">
+            <div class="flex items-center gap-2">
+                <span id="db-status" class="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">TimeDB</span>
+            </div>
+            <div class="flex gap-1 bg-slate-900/50 rounded p-0.5 no-drag">
+                <button onclick="switchTab('tracker')" id="btn-tracker" class="px-2 py-0.5 rounded text-[9px] font-bold text-white bg-blue-600">⏱️</button>
+                <button onclick="switchTab('pomo')" id="btn-pomo" class="px-2 py-0.5 rounded text-[9px] font-bold text-slate-400 hover:bg-slate-700">🍅</button>
+                <button onclick="switchTab('notes')" id="btn-notes" class="px-2 py-0.5 rounded text-[9px] font-bold text-slate-400 hover:bg-slate-700">📝</button>
+            </div>
+            <button onclick="window.close()" class="text-slate-500 hover:text-white hover:bg-red-500 rounded px-1.5 transition no-drag text-[10px]">✕</button>
+        </div>
+
+        <div class="flex-grow p-3 relative overflow-hidden">
+            
+            <div id="tab-tracker" class="tab-content active h-full">
+                <div class="flex flex-col items-center pt-1">
+                    <input type="text" id="activity-name" placeholder="Fokus..." class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white mb-2 focus:outline-none focus:border-blue-500 text-center placeholder-slate-600">
+
+                    <div id="tracker-display" class="text-4xl font-mono font-bold text-white mb-3 tracking-tighter drop-shadow-md">00:00:00</div>
+                    
+                    <div class="flex gap-1 w-full mb-2">
+                        <button onclick="startTracker()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-1 rounded text-xs font-bold shadow-sm transition">Start</button>
+                        <button onclick="stopTracker()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-1 rounded text-xs font-bold shadow-sm transition">Stop</button>
+                    </div>
+                </div>
+                
+                <div class="mt-auto h-28 overflow-y-auto no-scrollbar border-t border-slate-700/50 pt-1">
+                    <ul id="log-list" class="space-y-1">
+                        <li class="text-center text-[10px] text-slate-600 italic">Memuat...</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="tab-pomo" class="tab-content h-full">
+                <div class="flex flex-col items-center justify-center h-full">
+                    <div id="pomo-display" class="text-5xl font-mono font-bold text-white mb-2 tracking-tight">25:00</div>
+                    
+                    <div class="flex gap-1 mb-4 w-full justify-center">
+                        <button onclick="setPomo(25)" class="px-2 py-0.5 bg-slate-700 rounded text-[9px] text-slate-300 hover:bg-slate-600">25m</button>
+                        <button onclick="setPomo(5)" class="px-2 py-0.5 bg-slate-700 rounded text-[9px] text-slate-300 hover:bg-slate-600">5m</button>
+                        <button onclick="setPomo(15)" class="px-2 py-0.5 bg-slate-700 rounded text-[9px] text-slate-300 hover:bg-slate-600">15m</button>
+                    </div>
+
+                    <button onclick="startPomo()" class="w-full bg-red-600 hover:bg-red-500 text-white py-1.5 rounded font-bold text-xs mb-1 shadow-md">MULAI</button>
+                    <div class="flex gap-1 w-full">
+                        <button onclick="pausePomo()" class="flex-1 bg-slate-700 hover:bg-slate-600 py-1 rounded text-[10px]">Pause</button>
+                        <button onclick="resetPomo()" class="flex-1 bg-slate-700 hover:bg-slate-600 py-1 rounded text-[10px]">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-notes" class="tab-content h-full">
+                <textarea id="notepad" class="w-full h-full bg-slate-800/50 border border-slate-700 rounded p-2 text-xs text-slate-300 focus:outline-none focus:border-yellow-500/50 resize-none" placeholder="Catatan..."></textarea>
+                <div id="save-status" class="absolute bottom-4 right-4 text-[9px] text-green-500 opacity-0 transition-opacity bg-slate-900 px-1 rounded">Saved</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === CONFIG DATABASE ===
+        // Kita ambil variable SUPABASE_CONFIG dari file secrets.js
+        const { createClient } = supabase;
+        
+        // Perhatikan ini: Kita pakai SUPABASE_CONFIG.URL dan .KEY
+        const db = createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.KEY);
+
+        // Logic sama seperti sebelumnya
+        async function checkConnection() {
+            const { error } = await db.from('logs').select('count', { count: 'exact', head: true });
+            const dot = document.getElementById('db-status');
+            if(!error) { dot.classList.replace('bg-gray-500', 'bg-green-500'); fetchLogs(); } 
+            else { dot.classList.replace('bg-gray-500', 'bg-red-500'); }
+        }
+        checkConnection();
+
+        async function saveLogToDB(activity, duration) {
+            if(!activity) activity = "-";
+            await db.from('logs').insert({ activity, duration });
+            fetchLogs();
+        }
+
+        async function fetchLogs() {
+            const list = document.getElementById('log-list');
+            const { data } = await db.from('logs').select('*').order('created_at', { ascending: false }).limit(10);
+            if (!data) return;
+            list.innerHTML = '';
+            data.forEach(log => {
+                const li = document.createElement('li');
+                li.className = "flex justify-between items-center border-b border-slate-800 pb-1";
+                li.innerHTML = `
+                    <span class="text-[10px] text-slate-300 truncate w-32">${log.activity}</span>
+                    <span class="text-[9px] font-mono text-blue-400">${log.duration}</span>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        // Logic Tracker
+        let tInt, tSec = 0, isT = false;
+        const tDisp = document.getElementById('tracker-display');
+        const actInput = document.getElementById('activity-name');
+        function fmt(s) { return new Date(s * 1000).toISOString().substr(11, 8); }
+
+        function startTracker() {
+            if (isT) return;
+            isT = true;
+            tInt = setInterval(() => { tSec++; tDisp.innerText = fmt(tSec); }, 1000);
+        }
+        function stopTracker() {
+            if (!isT) return;
+            isT = false; clearInterval(tInt);
+            saveLogToDB(actInput.value, fmt(tSec));
+            tSec = 0; tDisp.innerText = "00:00:00"; actInput.value = ""; // Auto reset
+        }
+
+        // Logic Pomo & Tabs
+        function switchTab(name) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#btn-tracker, #btn-pomo, #btn-notes').forEach(b => {
+                b.className = "px-2 py-0.5 rounded text-[9px] font-bold text-slate-400 hover:bg-slate-700";
+            });
+            document.getElementById(`tab-${name}`).classList.add('active');
+            
+            const btn = document.getElementById(`btn-${name}`);
+            let col = name==='pomo'?'bg-red-600': name==='notes'?'bg-yellow-600':'bg-blue-600';
+            btn.className = `px-2 py-0.5 rounded text-[9px] font-bold text-white ${col}`;
+        }
+
+        let pInt, pSec = 25 * 60, isP = false;
+        const pDisp = document.getElementById('pomo-display');
+        function fmtP(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; }
+        function startPomo() { if(!isP){ isP=true; pInt=setInterval(()=>{ if(pSec>0){pSec--;pDisp.innerText=fmtP(pSec)}else{clearInterval(pInt);isP=false;alert("Selesai!")} },1000); }}
+        function pausePomo(){ isP=false;clearInterval(pInt); }
+        function resetPomo(){ pausePomo();pSec=25*60;pDisp.innerText="25:00"; }
+        function setPomo(m){ pausePomo();pSec=m*60;pDisp.innerText=fmtP(pSec); }
+        
+        const note = document.getElementById('notepad');
+        const save = document.getElementById('save-status');
+        if(localStorage.getItem('wNote')) note.value = localStorage.getItem('wNote');
+        note.addEventListener('input', ()=>{ localStorage.setItem('wNote', note.value); save.style.opacity='1'; setTimeout(()=>save.style.opacity='0',1000); });
+    </script>
+</body>
+</html>
