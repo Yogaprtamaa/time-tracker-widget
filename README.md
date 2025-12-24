@@ -1,4 +1,6 @@
-<img width="248" height="309" alt="image" src="https://github.com/user-attachments/assets/a015d4e2-1d4b-40f8-a3fd-59809dcbe5df" /># ⏱️ Mini Time Tracker Widget
+# ⏱️ Mini Time Tracker Widget
+
+<img width="248" height="309" alt="image" src="https://github.com/user-attachments/assets/a015d4e2-1d4b-40f8-a3fd-59809dcbe5df" />
 
 A lightweight, floating desktop widget built with **Electron** to track your productivity. It features a task timer, Pomodoro focus timer, and quick notes—all in a compact, always-on-top window. Your task logs are automatically synced to **Supabase**.
 
@@ -65,3 +67,4 @@ Bash
 npm start
 📦 Building the App
 To package the app as an executable (.exe), you can use electron-forge or electron-builder (configuration not included in this basic setup).
+
